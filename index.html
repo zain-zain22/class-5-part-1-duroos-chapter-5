@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="ml">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Quiz App</title>
+<style>
+    body { font-family: 'Noto Sans Malayalam', sans-serif; background-color: #e8eceb; margin: 0; padding: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; -webkit-tap-highlight-color: transparent; }
+    
+    #game-box { 
+        background: #fff; 
+        padding: 25px; 
+        border-radius: 0px; /* മൊബൈലിൽ ഫുൾ വിഡ്ത്ത് ലഭിക്കാൻ */
+        box-shadow: 0 10px 30px rgba(0,0,0,0.1); 
+        width: 100%; 
+        max-width: 100%; /* ഡിഫോൾട്ട് ആയി ഫുൾ സ്ക്രീൻ */
+        min-height: 100vh;
+        box-sizing: border-box;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+    }
+
+    /* വലിയ സ്ക്രീനുകൾക്ക് (PC/Tablet) വേണ്ടിയുള്ള മാറ്റം */
+    @media (min-width: 600px) {
+        #game-box {
+            max-width: 500px;
+            min-height: auto;
+            border-radius: 20px;
+        }
+        body { padding: 20px; }
+    }
+
+    .header-info { color: #00796b; font-size: 14px; font-weight: bold; margin-bottom: 5px; }
+    h2 { color: #2c3e50; font-size: 1.5rem; margin: 5px 0 20px; border-bottom: 3px solid #009688; padding-bottom: 10px; line-height: 1.4; }
+    
+    .input-container { position: relative; width: 100%; margin: 25px 0; }
+    input { width: 100%; padding: 18px; border: 2px solid #ddd; border-radius: 12px; font-size: 18px; text-align: center; box-sizing: border-box; outline: none; }
+    input:focus { border-color: #009688; }
+    
+    ..dropdown-list { 
+    position: absolute; 
+    top: 100%; 
+    left: 0; 
+    right: 0; 
+    background: white; 
+    border: 1px solid #ccc; 
+    border-radius: 0 0 12px 12px; 
+    max-height: 150px; /* ഇവിടെ ഉയരം കുറച്ചു */
+    overflow-y: auto; 
+    z-index: 999; /* ഇത് ബട്ടണുകൾക്ക് മുകളിൽ വരാൻ സഹായിക്കും */
+    display: none; 
+    text-align: left; 
+    box-shadow: 0 5px 15px rgba(0,0,0,0.2); 
+}
+    .dropdown-item { display: flex; justify-content: space-between; align-items: center; padding: 15px; border-bottom: 1px solid #eee; cursor: pointer; }
+    .delete-btn { color: #d32f2f; font-weight: bold; padding: 5px 10px; font-size: 20px; }
+    
+    .btn { display: block; width: 100%; padding: 18px; margin: 12px 0; border: none; border-radius: 15px; font-size: 18px; cursor: pointer; font-weight: bold; transition: 0.2s; box-sizing: border-box; }
+    .start-btn { background: #009688; color: white; box-shadow: 0 4px 10px rgba(0,150,136,0.3); }
+    .option-btn { background: #f8fbfb; border: 1px solid #cfd8dc; text-align: right; padding-right: 25px; font-weight: normal; color: #37474f; font-size: 17px; }
+    .option-btn:active { background: #009688; color: white; transform: translateY(2px); }
+    
+    #info-bar { display: flex; justify-content: space-between; margin-bottom: 20px; font-size: 16px; font-weight: bold; color: #546e7a; }
+    .hidden { display: none; }
+    
+    .certificate { background: #fff; border: 6px double #009688; padding: 20px; margin: 15px 0; border-radius: 15px; }
+    .cert-row { display: flex; justify-content: space-between; margin: 12px 0; border-bottom: 1px dashed #ccc; padding-bottom: 6px; font-size: 17px; }
+    .point-box { background: #fff3e0; padding: 12px; border-radius: 10px; border: 1px solid #ffe0b2; margin: 15px 0; color: #e65100; }
+    .success-msg { margin-top: 15px; padding: 10px; background: #e0f2f1; color: #00695c; border-radius: 10px; font-size: 15px; line-height: 1.6; }
+    .instruction { background: #fff9c4; padding: 15px; border-radius: 10px; border: 1px solid #fbc02d; font-weight: bold; font-size: 14px; margin-top: 10px; color: #5d4037; }
+</style>
+</head>
+<body>
+<div id="game-box">
+    <div id="start-screen">
+        <div class="header-info">Duroos  - പാർട്ട് 1</div>
+        <h2>ക്ലാസ് 5 | പാഠം 5<br><span style="color:#00796b;">അൽ അവ്വലു വൽ ആഖിര് </span></h2>
+        <div class="input-container">
+            <input type="text" id="player-name" placeholder="നിങ്ങളുടെ പേര് ടൈപ്പ് ചെയ്യുക" autocomplete="off" onfocus="showDropdown()">
+            <div id="names-dropdown" class="dropdown-list"></div>
+        </div>
+        <button class="btn start-btn" onclick="startGame()">ക്വിസ് തുടങ്ങാം</button>
+    </div>
+
+    <div id="quiz-screen" class="hidden">
+        <div id="info-bar"><span>ചോദ്യം: <span id="q-no"></span>/<span id="total-q"></span></span><span id="timer">⏱ <span id="seconds">0</span>s</span></div>
+        <div id="question" style="font-size:1.3rem; font-weight:bold; margin-bottom:30px; text-align: right; line-height: 1.6; color:#2c3e50;"></div>
+        <div id="options"></div>
+    </div>
+
+    <div id="win-screen" class="hidden">
+        <h2 style="color: #2e7d32; border: none;">🎉 അഭിനന്ദനങ്ങൾ!</h2>
+        <div class="certificate">
+            <h3>വിജയ സർട്ടിഫിക്കറ്റ്</h3>
+            <div class="cert-row"><span>പേര്:</span> <b id="final-name"></b></div>
+            <div class="cert-row"><span>ശ്രമം:</span> <b id="final-attempts"></b></div>
+            <div class="cert-row"><span>സമയം:</span> <b><span id="final-duration"></span> s</b></div>
+            <div class="cert-row"><span>പൂർത്തിയാക്കിയ സമയം:</span> <b id="final-real-time"></b></div>
+            <div class="point-box">
+    <div style="display:flex; justify-content:space-between; font-size:19px;">
+        <span>ആകെ പോയിന്റ്:</span> 
+        <b id="final-points"></b>
+    </div>
+    <div style="font-size:13px; font-weight:bold; color:#d35400; margin-top:8px;">
+        ⚠️ കുറഞ്ഞ പോയിന്റ് ലഭിക്കുന്നവർക്കാണ് ഒന്നാം സ്ഥാനം
+    </div>
+</div>
+            <div class="success-msg">ക്ലാസ് 5 Duroos  (പാർട്ട് 1)<br>പാഠം 5: അൽ അവ്വലു വൽ ആഖിര്  വിജയിച്ചു.</div>
+        </div>
+        <div class="instruction">📸 ഈ സർട്ടിഫിക്കറ്റ് സ്ക്രീൻഷോട്ട് എടുത്ത് ഉസ്താദിന് അയച്ചു കൊടുക്കുക.</div>
+        <button class="btn start-btn" style="margin-top:20px;" onclick="location.reload()">വീണ്ടും കളിക്കുക</button>
+    </div>
+
+    <div id="error-screen" class="hidden">
+        <h2 style="color: #c62828; border: none;">പരാജയപ്പെട്ടു!</h2>
+        <div id="fail-msg" style="background:#ffebee; padding:20px; border-radius:15px; margin-bottom:20px; font-size:18px;"></div>
+        <button class="btn start-btn" onclick="location.reload()">വീണ്ടും ശ്രമിക്കുക</button>
+    </div>
+</div>
+
+<script>
+const quizData = const quizData = [
+    { q: "അല്ലാഹുവിന് നിർബന്ധമായും ഉണ്ടായിരിക്കേണ്ട വിശേഷണങ്ങൾ (സിഫാത്തുൽ വാജിബ) എത്രയാണ്?", a: "20", o: ["10", "20", "99"] },
+    { q: "അല്ലാഹുവിന് ഉണ്ടാകാൻ പാടില്ലാത്ത അസംഭവ്യമായ ഗുണങ്ങൾക്ക് എന്ത് പറയുന്നു?", a: "സിഫാത്തുൽ മുസ്തഹീല", o: ["സിഫാത്തുൽ ജാഇസ", "സിഫാത്തുൽ വാജിബ", "സിഫാത്തുൽ മുസ്തഹീല"] },
+    { q: "അല്ലാഹുവിന്റെ ഒന്നാമത്തെ വാജിബായ ഗുണം ഏതാണ്?", a: "അൽ-വുജൂദ് (ഉണ്ടായിരിക്കൽ)", o: ["അൽ-വുജൂദ് (ഉണ്ടായിരിക്കൽ)", "അൽ-ഖിദം", "അൽ-ബഖാഅ്"] },
+    { q: "അൽ-വുജൂദ് (الْوُجُودُ) എന്ന ഗുണത്തിന്റെ വിപരീതം ഏതാണ്?", a: "അൽ-അദം (ഇല്ലാതിരിക്കൽ)", o: ["അൽ-ഹുദൂസ്", "അൽ-അദം (ഇല്ലാതിരിക്കൽ)", "അൽ-ഫനാഅ്"] },
+    { q: "അല്ലാഹുവിന് തുടക്കമില്ല എന്ന അർത്ഥം വരുന്ന ഗുണം ഏതാണ്?", a: "അൽ-ഖിദം (الْقِدَمُ)", o: ["അൽ-ബഖാഅ്", "അൽ-ഖിദം (الْقِدَمُ)", "അൽ-വഹ്ദാനിയ്യ"] },
+    { q: "അൽ-ഖിദം എന്ന ഗുണത്തിന്റെ വിപരീതം ഏതാണ്?", a: "അൽ-ഹുദൂസ് (തുടക്കമുണ്ടാവുക)", o: ["അൽ-ഫനാഅ്", "അൽ-ഹുദൂസ് (തുടക്കമുണ്ടാവുക)", "അൽ-അദം"] },
+    { q: "അല്ലാഹുവിന് നാശമില്ല (ഒടുക്കമില്ല) എന്ന് അർത്ഥം വരുന്ന ഗുണം?", a: "അൽ-ബഖാഅ് (الْبَقَاءُ)", o: ["അൽ-വുജൂദ്", "അൽ-ബഖാഅ് (الْبَقَاءُ)", "അൽ-ഇൽമ്"] },
+    { q: "അൽ-ബഖാഅ് എന്നതിന്റെ വിപരീതം ഏതാണ്?", a: "അൽ-ഫനാഅ് (നശിക്കൽ)", o: ["അൽ-അദം", "അൽ-ഫനാഅ് (നശിക്കൽ)", "അൽ-കറാഹ"] },
+    { q: "സൃഷ്ടികളോട് ഒന്നിനോടും സാമ്യമില്ലാത്തവൻ എന്ന അർത്ഥം വരുന്ന പദം?", a: "മുഖാലഫത്തുൻ ലിൽ ഹവാദിസ്", o: ["മുഖാലഫത്തുൻ ലിൽ ഹവാദിസ്", "അൽ-വഹ്ദാനിയ്യ", "അൽ-ഇൽമ്"] },
+    { q: "മുഖാലഫത്തുൻ ലിൽ ഹവാദിസ് എന്ന ഗുണത്തിന്റെ വിപരീതം?", a: "അൽ-മുമാസലത്തു ലിൽ ഹവാദിസ്", o: ["അൽ-ഇഹ്തിയാജ്", "അൽ-മുമാസലത്തു ലിൽ ഹവാദിസ്", "അൽ-ബകം"] },
+    { q: "അല്ലാഹു സ്വന്തമായി നിലകൊള്ളുന്നവൻ എന്ന് അർത്ഥം വരുന്ന ഗുണം?", a: "ഖിയാമുഹു ബി നഫ്‌സിഹി", o: ["അൽ-വഹ്ദാനിയ്യ", "ഖിയാമുഹു ബി നഫ്‌സിഹി", "അൽ-ബസ്വറു"] },
+    { q: "ഖിയാമുഹു ബി നഫ്‌സിഹി എന്നതിന്റെ വിപരീതം ഏതാണ്?", a: "അൽ-ഇഹ്തിയാജ് (ആവശ്യമുള്ളവൻ)", o: ["അൽ-കറാഹ", "അൽ-ഇഹ്തിയാജ് (ആവശ്യമുള്ളവൻ)", "അൽ-മൗത്ത്"] },
+    { q: "അല്ലാഹു ഏകനാണ് എന്ന് സൂചിപ്പിക്കുന്ന സിഫത്ത് ഏതാണ്?", a: "അൽ-വഹ്ദാനിയ്യ (الْوَحْدَانِيَّةُ)", o: ["അൽ-ഖുദ്‌റ", "അൽ-വഹ്ദാനിയ്യ (الْوَحْدَانِيَّةُ)", "അൽ-ഹയാത്ത്"] },
+    { q: "അൽ-വഹ്ദാനിയ്യ എന്നതിന്റെ വിപരീതം ഏതാണ്?", a: "അത്തഅദ്ദുദ് (ഒന്നിലധികം ഉണ്ടാവുക)", o: ["അൽ-അജ്‌സ്", "അത്തഅദ്ദുദ് (ഒന്നിലധികം ഉണ്ടാവുക)", "അൽ-ജഹ്ല്"] },
+    { q: "അല്ലാഹു എല്ലാറ്റിനും കഴിപ്പുള്ളവൻ (സർവ്വശക്തൻ) എന്ന അർത്ഥം വരുന്ന ഗുണം?", a: "അൽ-ഖുദ്‌റ (الْقُدْرَةُ)", o: ["അൽ-ഖുദ്‌റ (الْقُدْرَةُ)", "അൽ-ഇറാദ", "അൽ-ഇൽമ്"] },
+    { q: "അൽ-ഖുദ്‌റ എന്ന ഗുണത്തിന്റെ വിപരീതം ഏതാണ്?", a: "അൽ-അജ്‌സ് (അശക്തത)", o: ["അൽ-മൗത്ത്", "അൽ-അജ്‌സ് (അശക്തത)", "അൽ-ഇറാദ"] },
+    { q: "അല്ലാഹു എല്ലാം ഉദ്ദേശിക്കുന്നവൻ എന്ന ഗുണം ഏതാണ്?", a: "അൽ-ഇറാദ (الْإِرَادَةُ)", o: ["അൽ-ഇൽമ്", "അൽ-ഇറാദ (الْإِرَادَةُ)", "അൽ-ഹയാത്ത്"] },
+    { q: "അൽ-ഇറാദ എന്ന ഗുണത്തിന്റെ വിപരീതം ഏതാണ്?", a: "അൽ-കറാഹ (വെറുക്കപ്പെട്ടത്/ഉദ്ദേശമില്ലായ്മ)", o: ["അൽ-കറാഹ", "അൽ-ജഹ്ല്", "അൽ-ബകം"] },
+    { q: "അല്ലാഹു എല്ലാം അറിയുന്നവൻ (സർവ്വജ്ഞൻ) എന്ന് അർത്ഥം വരുന്ന ഗുണം?", a: "അൽ-ഇൽമ് (الْعِلْمُ)", o: ["അൽ-ഇൽമ് (الْعِلْمُ)", "അൽ-ഖുദ്‌റ", "അൽ-ബസ്വറു"] },
+    { q: "അൽ-ഇൽമ് എന്നതിന്റെ വിപരീതമായ ഗുണം ഏതാണ്?", a: "അൽ-ജഹ്ല് (അറിവില്ലായ്മ)", o: ["അൽ-ജഹ്ല് (അറിവില്ലായ്മ)", "അൽ-അമ", "അൽ-സ്വമമ്"] },
+    { q: "അല്ലാഹു എന്നും ജീവിച്ചിരിക്കുന്നവൻ എന്ന ഗുണം?", a: "അൽ-ഹയാത്ത് (الْحَيَاةُ)", o: ["അൽ-ബഖാഅ്", "അൽ-ഹയാത്ത് (الْحَيَاةُ)", "അൽ-കലാം"] },
+    { q: "അൽ-ഹയാത്ത് എന്ന ഗുണത്തിന്റെ വിപരീതം ഏതാണ്?", a: "അൽ-മൗത്ത് (മരണം)", o: ["അൽ-ഫനാഅ്", "അൽ-മൗത്ത് (മരണം)", "അൽ-അജസ്"] },
+    { q: "അല്ലാഹു എല്ലാം കേൾക്കുന്നവൻ എന്ന ഗുണം?", a: "അസ്-സമ്അ് (السَّمْعُ)", o: ["അസ്-സമ്അ് (السَّمْعُ)", "അൽ-ബസ്വറു", "അൽ-കലാം"] },
+    { q: "അസ്-സമ്അ് എന്നതിന്റെ വിപരീതം?", a: "അസ്-സ്വമമ് (ബധിരത)", o: ["അൽ-ബകം", "അസ്-സ്വമമ് (ബധിരത)", "അൽ-അമ"] },
+    { q: "അല്ലാഹു എല്ലാം കാണുന്നവൻ എന്ന ഗുണം?", a: "അൽ-ബസ്വറു (الْبَصَرُ)", o: ["അസ്-സമ്അ്", "അൽ-ബസ്വറു (الْبَصَرُ)", "അൽ-ഇൽമ്"] },
+    { q: "അൽ-ബസ്വറു എന്ന ഗുണത്തിന്റെ വിപരീതം?", a: "അൽ-അമ (അന്ധത)", o: ["അൽ-ജഹ്ല്", "അൽ-അമ (അന്ധത)", "അൽ-സ്വമമ്"] },
+    { q: "അല്ലാഹു സംസാരിക്കുന്നവൻ എന്ന ഗുണം?", a: "അൽ-കലാം (الْكَلَامُ)", o: ["അൽ-കലാം (الْكَلَامُ)", "അൽ-ഖുദ്‌റ", "അൽ-ഇറാദ"] },
+    { q: "അൽ-കലാം എന്ന ഗുണത്തിന്റെ വിപരീതം ഏതാണ്?", a: "അൽ-ബകം (ഊമയാവുക)", o: ["അൽ-അമ", "അൽ-ബകം (ഊമയാവുക)", "അൽ-ജഹ്ല്"] },
+    { q: "കൗനുഹു ഖാദിറൻ (كَوْنُهُ قَادِرًا) എന്നാൽ എന്താണ് അർത്ഥം?", a: "അവൻ കഴിപ്പുള്ളവനായിരിക്കൽ", o: ["അവൻ കാണുന്നവനായിരിക്കൽ", "അവൻ കഴിപ്പുള്ളവനായിരിക്കൽ", "അവൻ ജീവനുള്ളവനായിരിക്കൽ"] },
+    { q: "കൗനുഹു ഖാദിറൻ എന്നതിന്റെ വിപരീതം?", a: "കൗനുഹു ആജിസൻ", o: ["കൗനുഹു കാരിഹൻ", "കൗനുഹു ആജിസൻ", "കൗനുഹു മൈത്തൻ"] },
+    { q: "അല്ലാഹു ഉദ്ദേശിക്കുന്നവനായിരിക്കൽ എന്ന് അർത്ഥമുള്ള പദം?", a: "കൗനുഹു മുരീദൻ", o: ["കൗനുഹു മുരീദൻ", "കൗനുഹു ആലിമൻ", "കൗനുഹു ഹയ്യൻ"] },
+    { q: "കൗനുഹു മുരീദൻ എന്നതിന്റെ വിപരീതം?", a: "കൗനുഹു കാരിഹൻ", o: ["കൗനുഹു ആജിസൻ", "കൗനുഹു കാരിഹൻ", "കൗനുഹു ഹയ്യൻ"] },
+    { q: "അല്ലാഹു അറിയുന്നവനായിരിക്കൽ എന്ന ഗുണം?", a: "കൗനുഹു ആലിമൻ (كَوْنُهُ عَالِمًا)", o: ["കൗനുഹു മുരീദൻ", "കൗനുഹു ആലിമൻ (كَوْنُهُ عَالِمًا)", "കൗനുഹു സമീഅൻ"] },
+    { q: "കൗനുഹു ആലിമൻ എന്നതിന്റെ വിപരീതം ഏതാണ്?", a: "കൗനുഹു ജാഹിലൻ", o: ["കൗനുഹു മൈത്തൻ", "കൗനുഹു ജാഹിലൻ", "കൗനുഹു അസ്വം"] },
+    { q: "അല്ലാഹു ജീവനുള്ളവനായിരിക്കൽ എന്ന അർത്ഥം വരുന്ന പദം?", a: "കൗനുഹു ഹയ്യൻ (كَوْنُهُ حَيًّا)", o: ["കൗനുഹു ഹയ്യൻ (كَوْنُهُ حَيًّا)", "കൗനുഹു സമീഅൻ", "കൗനുഹു ബസ്വീറൻ"] },
+    { q: "കൗനുഹു ഹയ്യൻ എന്നതിന്റെ വിപരീതം?", a: "കൗനുഹു മൈത്തൻ (മരണപ്പെട്ടവനായിരിക്കൽ)", o: ["കൗനുഹു ആജിസൻ", "കൗനുഹു മൈത്തൻ (മരണപ്പെട്ടവനായിരിക്കൽ)", "കൗനുഹു അസ്വം"] },
+    { q: "അല്ലാഹു കേൾക്കുന്നവനായിരിക്കൽ എന്ന ഗുണം?", a: "കൗനുഹു സമീഅൻ (كَوْنُهُ سَمِيعًا)", o: ["കൗനുഹു ബസ്വീറൻ", "കൗനുഹു സമീഅൻ (كَوْنُهُ سَمِيعًا)", "കൗനുഹു മുത്തക്കല്ലിമൻ"] },
+    { q: "കൗനുഹു സമീഅൻ എന്നതിന്റെ വിപരീതം?", a: "കൗനുഹു അസ്വം (ബധിരനായിരിക്കൽ)", o: ["കൗനുഹു അഅ്മ", "കൗനുഹു അസ്വം (ബധിരനായിരിക്കൽ)", "കൗനുഹു അബ്കം"] },
+    { q: "അല്ലാഹു കാണുന്നവനായിരിക്കൽ എന്ന ഗുണം?", a: "കൗനുഹു ബസ്വീറൻ (كَوْنُهُ بَصِيرًا)", o: ["കൗനുഹു സമീഅൻ", "കൗനുഹു ബസ്വീറൻ (كَوْنُهُ بَصِيرًا)", "കൗനുഹു ആലിമൻ"] },
+    { q: "കൗനുഹു ബസ്വീറൻ എന്നതിന്റെ വിപരീതം ഏതാണ്?", a: "കൗനുഹു അഅ്മ (അന്ധനായിരിക്കൽ)", o: ["കൗനുഹു അബ്കം", "കൗനുഹു അഅ്മ (അന്ധനായിരിക്കൽ)", "കൗനുഹു ജാഹിലൻ"] },
+    { q: "അല്ലാഹു സംസാരിക്കുന്നവനായിരിക്കൽ എന്ന ഗുണം?", a: "കൗനുഹു മുത്തക്കല്ലിമൻ (كَوْنُهُ مُتَكَلِّمًا)", o: ["കൗനുഹു മുത്തക്കല്ലിമൻ (كَوْനുഹു مُتَكَلِّمًا)", "കൗനുഹു മുരീദൻ", "കൗനുഹു ആലിമൻ"] },
+    { q: "കൗനുഹു മുത്തക്കല്ലിമൻ എന്നതിന്റെ വിപരീതം?", a: "കൗനുഹു അബ്കം (ഊമയായിരിക്കൽ)", o: ["കൗനുഹു മൈത്തൻ", "കൗനുഹു അബ്കം (ഊമയായിരിക്കൽ)", "കൗനുഹു അസ്വം"] },
+    { q: "അല്ലാഹുവിനെ കുറിച്ച് ആവാവുന്നതും ആകാത്തതുമായ ഗുണങ്ങൾ പഠിക്കുന്ന ഇൽമിന് എന്ത് പറയുന്നു?", a: "ഇൽമു തൗഹീദ് / ഇൽമുൽ കലാം", o: ["ഇൽമു ഫിഖ്‌ഹ്", "ഇൽമു തൗഹീദ് / ഇൽമുൽ കലാം", "ഇൽമു തഫ്സീർ"] },
+    { q: "അല്ലാഹുവിന് ആവാവുന്ന (ജാഇസായ) ഗുണങ്ങൾ എത്രയാണ്?", a: "ഒന്ന് (ഏതൊരു കാര്യവും ചെയ്യലോ ചെയ്യാതിരിക്കലോ)", o: ["അഞ്ച്", "ഇരുപത്", "ഒന്ന് (ഏതൊരു കാര്യവും ചെയ്യലോ ചെയ്യാതിരിക്കലോ)"] },
+    { q: "ചിത്രത്തിൽ എത്രാമത്തെ ഗുണമായാണ് 'അൽ-വഹ്ദാനിയ്യ' നൽകിയിരിക്കുന്നത്?", a: "6", o: ["1", "6", "10"] },
+    { q: "അൽ-ഖുദ്‌റ എന്ന വാക്കിന്റെ അർത്ഥം?", a: "കഴിവ്", o: ["അറിവ്", "കഴിവ്", "ശബ്ദം"] },
+    { q: "അൽ-ഇൽമ് എന്ന വാക്കിന്റെ അർത്ഥം?", a: "അറിവ്", o: ["അറിവ്", "ശക്തി", "കാഴ്ച"] },
+    { q: "അൽ-ഹുദൂസ് എന്നതിന്റെ അർത്ഥം?", a: "പുതുതായി ഉണ്ടാവുക", o: ["പഴയതാവുക", "പുതുതായി ഉണ്ടാവുക", "നശിക്കാതിരിക്കുക"] },
+    { q: "അൽ-ബകം എന്ന വാക്കിന്റെ അർത്ഥം?", a: "സംസാരിക്കാൻ കഴിയാത്ത അവസ്ഥ", o: ["സംസാരിക്കാൻ കഴിയാത്ത അവസ്ഥ", "കേൾക്കാത്ത അവസ്ഥ", "കാണാത്ത അവസ്ഥ"] },
+    { q: "ഈ പാഠഭാഗം ഏത് വിഷയത്തിലുള്ളതാണ്?", a: "അഖീദ (വിശ്വാസം)", o: ["ഫിഖ്‌ഹ് (കർമ്മശാസ്ത്രം)", "അഖീദ (വിശ്വാസം)", "ചരിത്രം"] }
+];
+;
+let currentIndex = 0, secondsElapsed = 0, timerInterval, playerName = "", attempts = 1;
+
+window.onload = updateDropdown;
+
+function startGame() {
+    playerName = document.getElementById("player-name").value.trim();
+    if (!playerName) { alert("പേര് നൽകുക!"); return; }
+    let players = JSON.parse(localStorage.getItem("all_players")) || [];
+    if (!players.includes(playerName)) { players.push(playerName); localStorage.setItem("all_players", JSON.stringify(players)); }
+    let storageKey = "stats_" + playerName + "_" + "Duroos " + "_L" + "5";
+    let stats = JSON.parse(localStorage.getItem(storageKey)) || { count: 0 };
+    attempts = stats.count + 1;
+    localStorage.setItem(storageKey, JSON.stringify({ count: attempts }));
+    shuffle(quizData); currentIndex = 0; secondsElapsed = 0;
+    document.getElementById("total-q").innerText = quizData.length;
+    document.getElementById("start-screen").classList.add("hidden");
+    document.getElementById("quiz-screen").classList.remove("hidden");
+    timerInterval = setInterval(() => { secondsElapsed++; document.getElementById("seconds").innerText = secondsElapsed; }, 1000);
+    showQuestion();
+}
+
+function updateDropdown() {
+    const list = document.getElementById("names-dropdown"); list.innerHTML = "";
+    const players = JSON.parse(localStorage.getItem("all_players")) || [];
+    players.forEach(name => {
+        let item = document.createElement("div"); item.className = "dropdown-item";
+        item.onmousedown = () => { document.getElementById("player-name").value = name; document.getElementById('names-dropdown').style.display = 'none'; };
+        item.innerHTML = "<span>" + name + "</span><span class='delete-btn' onclick='event.stopPropagation(); deleteName(\"" + name + "\")'>✕</span>";
+        list.appendChild(item);
+    });
+}
+
+function deleteName(name) {
+    let players = JSON.parse(localStorage.getItem("all_players")) || [];
+    players = players.filter(p => p !== name);
+    localStorage.setItem("all_players", JSON.stringify(players));
+    updateDropdown();
+}
+
+function showDropdown() { 
+    const players = JSON.parse(localStorage.getItem("all_players")) || [];
+    if(players.length > 0) document.getElementById('names-dropdown').style.display = 'block';
+}
+
+function shuffle(array) { return array.sort(() => Math.random() - 0.5); }
+
+function showQuestion() {
+    let q = quizData[currentIndex];
+    document.getElementById("q-no").innerText = currentIndex + 1;
+    document.getElementById("question").innerText = q.q;
+    let optDiv = document.getElementById("options"); optDiv.innerHTML = "";
+    let options = [...q.o]; shuffle(options);
+    options.forEach(opt => {
+        let btn = document.createElement("button"); btn.className = "btn option-btn"; btn.innerText = opt;
+        btn.onclick = () => { if (opt === q.a) { currentIndex++; if (currentIndex < quizData.length) showQuestion(); else showWin(); } else { gameOver(q.a); } };
+        optDiv.appendChild(btn);
+    });
+}
+
+function gameOver(correct) { 
+    clearInterval(timerInterval); 
+    document.getElementById("quiz-screen").classList.add("hidden"); 
+    document.getElementById("error-screen").classList.remove("hidden"); 
+    document.getElementById("fail-msg").innerHTML = "ഉത്തരം തെറ്റാണ്! <br><br>ശരിയായ ഉത്തരം: <br><b style='color:#009688;'>" + correct + "</b>"; 
+}
+
+function showWin() {
+    clearInterval(timerInterval);
+    document.getElementById("quiz-screen").classList.add("hidden");
+    document.getElementById("win-screen").classList.remove("hidden");
+    document.getElementById("final-name").innerText = playerName;
+    document.getElementById("final-attempts").innerText = attempts;
+    document.getElementById("final-duration").innerText = secondsElapsed; // ഇത് കളിക്കാൻ എടുത്ത സമയം
+    document.getElementById("final-points").innerText = (attempts * 100) + secondsElapsed;
+
+    // നിലവിലെ സമയം കാണിക്കാൻ താഴെ പറയുന്നവ ചേർക്കുക
+    const now = new Date();
+    const timeStr = now.toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: true });
+    const dateStr = now.toLocaleDateString('en-GB'); 
+    document.getElementById("final-real-time").innerText = timeStr + " | " + dateStr;
+}
+</script>
+</body>
+</html>
